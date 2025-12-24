@@ -1,0 +1,89 @@
+# ================================
+# Build results
+# ================================
+bin/
+obj/
+out/
+publish/
+
+# ================================
+# Visual Studio / VS Code
+# ================================
+.vs/
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# ================================
+# Rider / JetBrains
+# ================================
+.idea/
+*.iml
+
+# ================================
+# .NET Core
+# ================================
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# ================================
+# Logs
+# ================================
+*.log
+
+# ================================
+# SQLite databases
+# ================================
+*.db
+*.db-shm
+*.db-wal
+
+# ================================
+# App settings (Secrets)
+# ================================
+appsettings.Production.json
+appsettings.Staging.json
+
+# ================================
+# Environment files
+# ================================
+.env
+.env.*
+
+# ================================
+# Test artifacts
+# ================================
+TestResults/
+coverage/
+coverage.cobertura.xml
+
+# ================================
+# OS files
+# ================================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ================================
+# Azure publish profiles
+# ================================
+*.PublishSettings
+*.pubxml
+*.pubxml.user
+
+
+# ================================
+# NuGet
+# ================================
+*.nupkg
+.nuget/packages/
+
+# ================================
+# Backup / temp files
+# ================================
+*.bak
+*.tmp
+*.temp

@@ -44,7 +44,6 @@ artifacts/
 # ================================
 # App settings (Secrets)
 # ================================
-appsettings.Production.json
 appsettings.Staging.json
 
 # ================================

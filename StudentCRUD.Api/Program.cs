@@ -1,4 +1,3 @@
-
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using StudentCRUD.Api.Data;
@@ -7,42 +6,49 @@ using StudentCRUD.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// -----------------------------------------
-// Database configuration (Environment-based)
-// -----------------------------------------
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? throw new InvalidOperationException(
-        "Connection string 'DefaultConnection' not found."
-    );
+// -------------------------------------------------
+// LOGGING (Critical for Azure debugging)
+// -------------------------------------------------
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Logging.AddDebug();
+
+// -------------------------------------------------
+// DATABASE CONFIGURATION (Azure + Local)
+// -------------------------------------------------
+var connectionString =
+    builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException("DefaultConnection not found.");
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
     if (builder.Environment.IsDevelopment())
     {
-        // LOCAL → SQLite
         options.UseSqlite(connectionString);
     }
     else
     {
-        // PROD → Azure SQL
-        options.UseSqlServer(connectionString);
+        options.UseSqlServer(
+            connectionString,
+            sql => sql.EnableRetryOnFailure()
+        );
     }
 });
 
-// ----------------------
+// -------------------------------------------------
 // CORS
-// ----------------------
+// -------------------------------------------------
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAngularDev", policy =>
-        policy.WithOrigins("http://localhost:4200")
-              .AllowAnyHeader()
-              .AllowAnyMethod());
+    options.AddPolicy("AllowAll", policy =>
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader());
 });
 
-// ----------------------
+// -------------------------------------------------
 // MVC + Swagger
-// ----------------------
+// -------------------------------------------------
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
@@ -54,17 +60,30 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// ----------------------
+// -------------------------------------------------
 // Dependency Injection
-// ----------------------
+// -------------------------------------------------
 builder.Services.AddScoped<IStudentRepository, StudentRepository>();
 builder.Services.AddScoped<IStudentService, StudentService>();
 
 var app = builder.Build();
 
-// ------------------------------------------------
-// 🔹 Apply EF Core migrations SAFELY (Azure-ready)
-// ------------------------------------------------
+// -------------------------------------------------
+// GLOBAL EXCEPTION HANDLER (Prevents IIS 500 Masking)
+// -------------------------------------------------
+app.UseExceptionHandler(errorApp =>
+{
+    errorApp.Run(async context =>
+    {
+        context.Response.StatusCode = 500;
+        context.Response.ContentType = "text/plain";
+        await context.Response.WriteAsync("Internal server error. Check logs.");
+    });
+});
+
+// -------------------------------------------------
+// APPLY MIGRATIONS (SAFE FOR AZURE)
+// -------------------------------------------------
 using (var scope = app.Services.CreateScope())
 {
     try
@@ -74,29 +93,28 @@ using (var scope = app.Services.CreateScope())
     }
     catch (Exception ex)
     {
-        // Do NOT crash the app in Azure
-        var logger = scope.ServiceProvider
-                          .GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "Database migration failed during startup.");
+        Console.WriteLine("❌ Database migration failed:");
+        Console.WriteLine(ex.Message);
+        throw;
     }
 }
 
-// ----------------------
-// Middleware pipeline
-// ----------------------
-
-// Swagger enabled for both Dev & Prod (safe for APIs)
-app.UseSwagger();
-app.UseSwaggerUI(c =>
+// -------------------------------------------------
+// MIDDLEWARE PIPELINE
+// -------------------------------------------------
+if (app.Environment.IsDevelopment())
 {
-    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Student CRUD API V1");
-    c.RoutePrefix = "swagger";
-});
-
-app.UseCors("AllowAngularDev");
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+else
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
 app.UseHttpsRedirection();
-
+app.UseCors("AllowAll");
 app.MapControllers();
 
 app.Run();

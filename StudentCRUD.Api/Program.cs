@@ -1,3 +1,4 @@
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using StudentCRUD.Api.Data;
@@ -29,7 +30,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 });
 
 // ----------------------
-// CORS (Angular dev)
+// CORS
 // ----------------------
 builder.Services.AddCors(options =>
 {
@@ -62,30 +63,38 @@ builder.Services.AddScoped<IStudentService, StudentService>();
 var app = builder.Build();
 
 // ------------------------------------------------
-// 🔹 Apply EF Core migrations at startup (IMPORTANT)
+// 🔹 Apply EF Core migrations SAFELY (Azure-ready)
 // ------------------------------------------------
 using (var scope = app.Services.CreateScope())
 {
-    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    db.Database.Migrate();
+    try
+    {
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        db.Database.Migrate();
+    }
+    catch (Exception ex)
+    {
+        // Do NOT crash the app in Azure
+        var logger = scope.ServiceProvider
+                          .GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "Database migration failed during startup.");
+    }
 }
 
 // ----------------------
 // Middleware pipeline
 // ----------------------
-if (app.Environment.IsDevelopment())
+
+// Swagger enabled for both Dev & Prod (safe for APIs)
+app.UseSwagger();
+app.UseSwaggerUI(c =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Student CRUD API V1");
-        c.RoutePrefix = string.Empty;
-    });
-}
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Student CRUD API V1");
+    c.RoutePrefix = "swagger";
+});
 
 app.UseCors("AllowAngularDev");
 
-// HTTPS redirection is safe for Azure App Service
 app.UseHttpsRedirection();
 
 app.MapControllers();

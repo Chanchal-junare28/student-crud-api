@@ -10,8 +10,8 @@ using StudentCRUD.Api.Data;
 namespace StudentCRUD.Api.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20251230051748_FixPendingChanges")]
-    partial class FixPendingChanges
+    [Migration("20251230053347_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -45,7 +45,7 @@ namespace StudentCRUD.Api.Migrations
                     b.HasIndex("Email")
                         .IsUnique();
 
-                    b.ToTable("Students");
+                    b.ToTable("Students", (string)null);
                 });
 #pragma warning restore 612, 618
         }

@@ -60,6 +60,8 @@ builder.Services.AddScoped<IStudentRepository, StudentRepository>();
 builder.Services.AddScoped<IStudentService, StudentService>();
 
 var app = builder.Build();
+Console.WriteLine($"ENV: {app.Environment.EnvironmentName}");
+Console.WriteLine($"CONN: {(connectionString.Contains("student-crud-sql") ? "OK" : "WRONG")}");
 
 // ------------------------------------------------
 // 🔹 Apply EF Core migrations SAFELY (Azure-ready)

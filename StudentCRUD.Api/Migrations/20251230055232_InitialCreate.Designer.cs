@@ -10,7 +10,7 @@ using StudentCRUD.Api.Data;
 namespace StudentCRUD.Api.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20251230053347_InitialCreate")]
+    [Migration("20251230055232_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
